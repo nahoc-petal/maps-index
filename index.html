@@ -175,7 +175,7 @@ function calculateDistances(pt, closest, numberOfResults) {
       for (var i = 0;
         ((i < numberOfResults) && (i < closest.length)); i++) {
         closest[i].setMap(map);
-        outputDiv.innerHTML += "<a style='font-size: 1.6rem;' href='javascript:google.maps.event.trigger(closest[" + results[i].idx_closestMark + "],\"click\");'>" + results[i].title + '</a><br>' + results[i].address + "<br>" + results[i].distance.text + ' appoximately ' + results[i].duration.text + '<br><hr>';
+        outputDiv.innerHTML += "<a style='font-size: 1.6rem;' href='javascript:google.maps.event.trigger(closest[" + results[i].idx_closestMark + "],\"click\");'>" + results[i].title + '</a><br>' + destinations[i] + "<br>Distance: " + results[i].distance.text + '<br/><small style="color: #777;">(appoximately ' + results[i].duration.text + ')</small><br><hr>';
       }
       document.getElementById('button').classList.remove('is-loading');
     }
