@@ -16,7 +16,19 @@
     function codeAddress(){document.getElementById("side_bar").innerHTML="",document.getElementById("button").classList.add("is-loading"),document.getElementById("error").classList.add("none");var e=document.getElementById("address").value;geocoder.geocode({address:e},function(o,t){t==google.maps.GeocoderStatus.OK?(map.setCenter(o[0].geometry.location),customerMarker&&customerMarker.setMap(null),customerMarker=new google.maps.Marker({map:map,position:o[0].geometry.location}),closest=findClosestN(o[0].geometry.location,25),closest=closest.splice(0,25),calculateDistances(o[0].geometry.location,closest,5)):(document.getElementById("error").innerHTML="Não foi encontrado nenhum endereço com este CEP: "+e+", por favor tente novamente.",document.getElementById("error").classList.remove("none"),document.getElementById("button").classList.remove("is-loading"))})}
     function findClosestN(e,r){for(var s=[],t=0;t<gmarkers.length;t++)gmarkers[t].distance=google.maps.geometry.spherical.computeDistanceBetween(e,gmarkers[t].getPosition()),gmarkers[t].setMap(null),s.push(gmarkers[t]);return s.sort(sortByDist),s}
     function sortByDist(a, b) {return (a.distance - b.distance)}
-    function calculateDistances(e,t,s){for(var a=new google.maps.DistanceMatrixService,i={origins:[e],destinations:[],travelMode:google.maps.TravelMode.DRIVING,unitSystem:google.maps.UnitSystem.METRIC,avoidHighways:!1,avoidTolls:!1},o=0;o<t.length;o++)i.destinations.push(t[o].getPosition());a.getDistanceMatrix(i,function(e,a){if(a!=google.maps.DistanceMatrixStatus.OK)alert("Error was: "+a);else{e.originAddresses;var i=e.destinationAddresses,o=document.getElementById("side_bar");o.innerHTML="";for(var r=e.rows[0].elements,n=0;n<t.length;n++)r[n].title=t[n].title,r[n].address=t[n].address,r[n].idx_closestMark=n;r.sort(sortByDistDM);for(n=0;n<s&&n<t.length;n++)t[n].setMap(map),r[n].distance&&(o.innerHTML+="<a style='font-size: 1.6rem;' href='javascript:google.maps.event.trigger(closest["+r[n].idx_closestMark+'],"click");\'>'+r[n].title+"</a><br>"+i[n]+"<br>Distance: "+r[n].distance.text+'<br/><small style="color: #777;">(appoximately '+r[n].duration.text+")</small><br><hr>");document.getElementById("button").classList.remove("is-loading")}})}
+    function calculateDistances(e,t,s){for(var a=new google.maps.DistanceMatrixService,i={origins:[e],destinations:[],travelMode:google.maps.TravelMode.DRIVING,unitSystem:google.maps.UnitSystem.METRIC,avoidHighways:!1,avoidTolls:!1},o=0;o<t.length;o++)i.destinations.push(t[o].getPosition());a.getDistanceMatrix(i,function(e,a){if(a!=google.maps.DistanceMatrixStatus.OK)alert("Error was: "+a);else{e.originAddresses;var i=e.destinationAddresses,o=document.getElementById("side_bar");o.innerHTML="";for(var r=e.rows[0].elements,n=0;n<t.length;n++)r[n].title=t[n].title,r[n].address=t[n].address,r[n].idx_closestMark=n;r.sort(sortByDistDM);
+    
+    //console.log(e);
+
+    for(n=0;n<s&&n<t.length;n++){
+      var found = placesJson.find(function(element) {
+      return element.name === r[n].title;
+    });
+    var newAddress = found.public_place + ', ' + found.number + ' - ' + found.neighborhood + ', ' + found.city + ' - ' + found.state + ', ' + found.cep;
+      t[n].setMap(map),r[n].distance&&(o.innerHTML+="<a style='font-size: 1.6rem;' href='javascript:google.maps.event.trigger(closest["+r[n].idx_closestMark+'],"click");\'>'+r[n].title+"</a><br>"+newAddress+"<br>Distance: "+r[n].distance.text+'<br/><small style="color: #777;">(appoximately '+r[n].duration.text+")</small><br><hr>");
+    }
+      
+      document.getElementById("button").classList.remove("is-loading")}})}
     function sortByDistDM(t,e){if(t.distance&&e.distance)return t.distance.value-e.distance.value}
     google.maps.event.addDomListener(window, 'load', initialize);
     var locations = [];
@@ -48,14 +60,19 @@
     </div>
   </div>
   <script>
-    var phoneMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];var myInput = document.getElementById('address');var maskedInputController = vanillaTextMask.maskInput({inputElement: myInput,mask: phoneMask});
-    document.getElementById("address").onkeyup = function(event) { 
-      if(event.currentTarget.value.indexOf('_') === -1 && event.currentTarget.value.length !== 0) {
+    var phoneMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];
+    var myInput = document.getElementById('address');
+    var maskedInputController = vanillaTextMask.maskInput({
+      inputElement: myInput,
+      mask: phoneMask
+    });
+    document.getElementById("address").onkeyup = function (event) {
+      if (event.currentTarget.value.indexOf('_') === -1 && event.currentTarget.value.length !== 0) {
         document.getElementById('button').disabled = false;
       } else {
         document.getElementById('button').disabled = true;
       }
-     }
+    }
   </script>
 </body>
 
