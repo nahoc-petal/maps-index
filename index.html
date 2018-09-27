@@ -2,200 +2,26 @@
 <html>
 
 <head>
-  <title>Place Searches</title>
-  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
   <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <title>Place Searches</title>
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css" />
   <script type="text/javascript" src="vanillaTextMask.js"></script>
   <script type="text/javascript" src="places.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBbykOyVadLmO5CqX3knJSmxpPSRSfN7YA&libraries=geometry"></script>
-  <style>
-    html,
-    body,
-    #map_canvas {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-
-    #map {
-      display: none;
-    }
-
-    #side_bar {
-      width: 100%;
-    }
-
-    .none {
-      display: none;
-    }
-
-    #address {
-      width: unset;
-      flex-grow: 1;
-      margin-right: 10px;
-    }
-    .control {
-      display: flex;
-    }
-
-    .input {
-      max-width: 150px;
-    }
-
-    table {
-      width: 100%;
-    }
-    </style>
+  <style>#side_bar,table{width:100%}#map_canvas,body,html{margin:0;padding:0;height:100%}#map,.none{display:none}#address{width:unset;flex-grow:1;margin-right:10px}.control{display:flex}.input{max-width:150px}</style>
   <script>
-
-    var geocoder = null;
-var map = null;
-var customerMarker = null;
-var gmarkers = [];
-var closest = [];
-
-
-
-function initialize() {
-  geocoder = new google.maps.Geocoder();
-  map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 9,
-    center: new google.maps.LatLng(52.6699927, -0.7274620),
-    mapTypeId: google.maps.MapTypeId.ROADMAP
-  });
-  var infowindow = new google.maps.InfoWindow();
-  var marker, i;
-  var bounds = new google.maps.LatLngBounds();
-  //document.getElementById('info').innerHTML = "found " + locations.length + " locations<br>";
-  for (i = 0; i < locations.length; i++) {
-    var coordStr = locations[i][4];
-    var coords = coordStr.split(",");
-    var pt = new google.maps.LatLng(parseFloat(coords[0]), parseFloat(coords[1]));
-    bounds.extend(pt);
-    marker = new google.maps.Marker({
-      position: pt,
-      map: map,
-      icon: locations[i][5],
-      address: locations[i][2],
-      title: locations[i][0],
-      html: locations[i][0] + "<br>" + locations[i][2]
-    });
-    gmarkers.push(marker);
-    google.maps.event.addListener(marker, 'click', (function(marker, i) {
-        return function() {
-          infowindow.setContent(marker.html);
-          infowindow.open(map, marker);
-        }
-      })
-      (marker, i));
-  }
-  map.fitBounds(bounds);
-
-}
-
-function codeAddress() {
-  var outputDiv = document.getElementById('side_bar');
-      outputDiv.innerHTML = '';
-  document.getElementById('button').classList.add('is-loading');
-  document.getElementById('error').classList.add('none');
-  var numberOfResults = 25;
-  var numberOfDrivingResults = 5;
-  var address = document.getElementById('address').value;
-  geocoder.geocode({
-    'address': address
-  }, function(results, status) {
-    if (status == google.maps.GeocoderStatus.OK) {
-      map.setCenter(results[0].geometry.location);
-      if (customerMarker) customerMarker.setMap(null);
-      customerMarker = new google.maps.Marker({
-        map: map,
-        position: results[0].geometry.location
-      });
-      closest = findClosestN(results[0].geometry.location, numberOfResults);
-      // get driving distance
-      closest = closest.splice(0, numberOfResults);
-      calculateDistances(results[0].geometry.location, closest, numberOfDrivingResults);
-    } else {
-      //alert('Geocode was not successful for the following reason: ' + status);
-      document.getElementById('error').innerHTML = 'No results found.';
-      document.getElementById('error').classList.remove('none');
-      document.getElementById('button').classList.remove('is-loading');
-    }
-  });
-}
-
-function findClosestN(pt, numberOfResults) {
-  var closest = [];
-  //document.getElementById('info').innerHTML += "processing " + gmarkers.length + "<br>";
-  for (var i = 0; i < gmarkers.length; i++) {
-    gmarkers[i].distance = google.maps.geometry.spherical.computeDistanceBetween(pt, gmarkers[i].getPosition());
-    //document.getElementById('info').innerHTML += "process " + i + ":" + gmarkers[i].getPosition().toUrlValue(6) + ":" + gmarkers[i].distance.toFixed(2) + "<br>";
-    gmarkers[i].setMap(null);
-    closest.push(gmarkers[i]);
-  }
-  closest.sort(sortByDist);
-  return closest;
-}
-
-function sortByDist(a, b) {
-  return (a.distance - b.distance)
-}
-
-function calculateDistances(pt, closest, numberOfResults) {
-  var service = new google.maps.DistanceMatrixService();
-  var request = {
-    origins: [pt],
-    destinations: [],
-    travelMode: google.maps.TravelMode.DRIVING,
-    unitSystem: google.maps.UnitSystem.METRIC,
-    avoidHighways: false,
-    avoidTolls: false
-  };
-  for (var i = 0; i < closest.length; i++) {
-    request.destinations.push(closest[i].getPosition());
-  }
-  service.getDistanceMatrix(request, function(response, status) {
-    if (status != google.maps.DistanceMatrixStatus.OK) {
-      alert('Error was: ' + status);
-    } else {
-      var origins = response.originAddresses;
-      var destinations = response.destinationAddresses;
-      var outputDiv = document.getElementById('side_bar');
-      outputDiv.innerHTML = '';
-
-      var results = response.rows[0].elements;
-      // save title and address in record for sorting
-      for (var i = 0; i < closest.length; i++) {
-        results[i].title = closest[i].title;
-        results[i].address = closest[i].address;
-        results[i].idx_closestMark = i;
-      }
-      results.sort(sortByDistDM);
-      for (var i = 0;
-        ((i < numberOfResults) && (i < closest.length)); i++) {
-        closest[i].setMap(map);
-        outputDiv.innerHTML += "<a style='font-size: 1.6rem;' href='javascript:google.maps.event.trigger(closest[" + results[i].idx_closestMark + "],\"click\");'>" + results[i].title + '</a><br>' + destinations[i] + "<br>Distance: " + results[i].distance.text + '<br/><small style="color: #777;">(appoximately ' + results[i].duration.text + ')</small><br><hr>';
-      }
-      document.getElementById('button').classList.remove('is-loading');
-    }
-  });
-}
-
-function sortByDistDM(a, b) {
-  return (a.distance.value - b.distance.value);
-}
-
-google.maps.event.addDomListener(window, 'load', initialize);
-
-// Store Name[0],delivery[1],Address[2],Delivery Zone[3],Coordinates[4] data from FusionTables pizza stores example
-
-
-  var locations = [];
-  placesJson.forEach(element => {
-    locations.push([element.name, "no", element.city, "", element.coordinates, ""]);
-});
-    </script>
+    var geocoder = null;var map = null;var customerMarker = null;var gmarkers = [];var closest = [];
+    function initialize(){geocoder=new google.maps.Geocoder,map=new google.maps.Map(document.getElementById("map"),{zoom:9,center:new google.maps.LatLng(52.6699927,-.727462),mapTypeId:google.maps.MapTypeId.ROADMAP});var o,e,n=new google.maps.InfoWindow,a=new google.maps.LatLngBounds;for(e=0;e<locations.length;e++){var t=locations[e][4].split(","),s=new google.maps.LatLng(parseFloat(t[0]),parseFloat(t[1]));a.extend(s),o=new google.maps.Marker({position:s,map:map,icon:locations[e][5],address:locations[e][2],title:locations[e][0],html:locations[e][0]+"<br>"+locations[e][2]}),gmarkers.push(o),google.maps.event.addListener(o,"click",function(o,e){return function(){n.setContent(o.html),n.open(map,o)}}(o))}map.fitBounds(a)}
+    function codeAddress(){document.getElementById("side_bar").innerHTML="",document.getElementById("button").classList.add("is-loading"),document.getElementById("error").classList.add("none");var e=document.getElementById("address").value;geocoder.geocode({address:e},function(o,t){t==google.maps.GeocoderStatus.OK?(map.setCenter(o[0].geometry.location),customerMarker&&customerMarker.setMap(null),customerMarker=new google.maps.Marker({map:map,position:o[0].geometry.location}),closest=findClosestN(o[0].geometry.location,25),closest=closest.splice(0,25),calculateDistances(o[0].geometry.location,closest,5)):(document.getElementById("error").innerHTML="Não foi encontrado nenhum endereço com este CEP: "+e+", por favor tente novamente.",document.getElementById("error").classList.remove("none"),document.getElementById("button").classList.remove("is-loading"))})}
+    function findClosestN(e,r){for(var s=[],t=0;t<gmarkers.length;t++)gmarkers[t].distance=google.maps.geometry.spherical.computeDistanceBetween(e,gmarkers[t].getPosition()),gmarkers[t].setMap(null),s.push(gmarkers[t]);return s.sort(sortByDist),s}
+    function sortByDist(a, b) {return (a.distance - b.distance)}
+    function calculateDistances(e,t,s){for(var a=new google.maps.DistanceMatrixService,i={origins:[e],destinations:[],travelMode:google.maps.TravelMode.DRIVING,unitSystem:google.maps.UnitSystem.METRIC,avoidHighways:!1,avoidTolls:!1},o=0;o<t.length;o++)i.destinations.push(t[o].getPosition());a.getDistanceMatrix(i,function(e,a){if(a!=google.maps.DistanceMatrixStatus.OK)alert("Error was: "+a);else{e.originAddresses;var i=e.destinationAddresses,o=document.getElementById("side_bar");o.innerHTML="";for(var r=e.rows[0].elements,n=0;n<t.length;n++)r[n].title=t[n].title,r[n].address=t[n].address,r[n].idx_closestMark=n;r.sort(sortByDistDM);for(n=0;n<s&&n<t.length;n++)t[n].setMap(map),r[n].distance&&(o.innerHTML+="<a style='font-size: 1.6rem;' href='javascript:google.maps.event.trigger(closest["+r[n].idx_closestMark+'],"click");\'>'+r[n].title+"</a><br>"+i[n]+"<br>Distance: "+r[n].distance.text+'<br/><small style="color: #777;">(appoximately '+r[n].duration.text+")</small><br><hr>");document.getElementById("button").classList.remove("is-loading")}})}
+    function sortByDistDM(t,e){if(t.distance&&e.distance)return t.distance.value-e.distance.value}
+    google.maps.event.addDomListener(window, 'load', initialize);
+    var locations = [];
+    placesJson.forEach(element => {locations.push([element.name, "no", element.city, "", element.coordinates, ""]);});
+  </script>
 </head>
 
 <body class="container">
@@ -218,15 +44,11 @@ google.maps.event.addDomListener(window, 'load', initialize);
       </tr>
     </table>
     <div id="info"></div>
-    <div id="error" class="none notification"></div>
+    <div id="error" class="none notification">
+    </div>
   </div>
   <script>
-  var phoneMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];
-var myInput = document.getElementById('address');
-var maskedInputController = vanillaTextMask.maskInput({
-    inputElement: myInput,
-    mask: phoneMask
-  });
+    var phoneMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];var myInput = document.getElementById('address');var maskedInputController = vanillaTextMask.maskInput({inputElement: myInput,mask: phoneMask});
   </script>
 </body>
 
