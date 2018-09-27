@@ -29,8 +29,8 @@
     <div class="field">
       <label class="label">Enter your CEP</label>
       <div class="control">
-        <input id="address" class="input is-medium" type="text" value="13175668" />
-        <button id="button" type="button" class="button is-medium is-primary" onclick="codeAddress();">Search</button>
+        <input id="address" class="input is-medium" type="text" placeholder="CEP" />
+        <button id="button" type="button" class="button is-medium is-primary" disabled onclick="codeAddress();">Search</button>
       </div>
       <small style="color:#777;">Example: 12345-123</small>
     </div>
@@ -49,6 +49,13 @@
   </div>
   <script>
     var phoneMask = [/\d/, /\d/, /\d/, /\d/, /\d/, '-', /\d/, /\d/, /\d/];var myInput = document.getElementById('address');var maskedInputController = vanillaTextMask.maskInput({inputElement: myInput,mask: phoneMask});
+    document.getElementById("address").onkeyup = function(event) { 
+      if(event.currentTarget.value.indexOf('_') === -1 && event.currentTarget.value.length !== 0) {
+        document.getElementById('button').disabled = false;
+      } else {
+        document.getElementById('button').disabled = true;
+      }
+     }
   </script>
 </body>
 
